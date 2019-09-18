@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Bootstrap Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-3">
+                <label for="ddlProducts">Select Product</label>
+                <select id="ddlProducts" class="form-control" onchange=""></select>
+
+            </div>
+            <div class="col-sm-2">
+                <label for="Price">Price</label>
+                <input type="text" class="form-control" id="txtPrice" disabled>
+
+            </div>
+            <div class="col-sm-2">
+                <label for="Qty">Qty</label>
+                <input type="text" class="form-control" id="txtQty">
+
+            </div>
+            <div class="col-sm-2">
+                <label for="Total">Total</label>
+                <input type="text" class="form-control" id="txtTotal">
+            </div>
+
+            <div class="col-sm-2">
+
+                <input type="button" id="btnAdd" value="Add" style="width:80px; margin-top:20px" class="btn btn-primary" />
+            </div>
+        </div>
+        <hr>
+
+        <table id="tbProducts" class="table table-responsive  table-bordered">
+            <tr id="header">
+                <th style="display:none;">Product Id</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+                <th>Remove</th>
+            </tr>
+           <tbody id="tbProductDets">
+
+           </tbody>
+        </table>
+        <input type="button" id="btnSubmit" value="Submit" style="width:80px" class="btn btn-success pull-right" data-toggle="modal" data-target="#myModal"/>
+
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Modal Header</h4>
+                    </div>
+                    <div class="modal-body">
+                        <!-----Modal body---->
+                        <table id="tbMOrderDets" class="table table-responsive  table-bordered">
+                            <tr id="header">
+                                <th style="display:none;">Product Id</th>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                            </tr>
+                            <tbody id="tbMProductDets">
+                                
+                            </tbody>
+
+                        </table>
+                        <h4 >Grand Total : <span class="grandtotal"></span></h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+    <script type="text/javascript">
+        $(function PopDropDown() {
+            $.ajax({
+                type: "GET",
+                url: "api/Default/GetAllProducts",
+                data: '{}', // To Send something
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var ddlProducts = $('#ddlProducts');
+                    ddlProducts.empty().append('<option selected="selected" value="0">Please select</option>');
+                    $.each(r, function () {
+                        ddlProducts.append($("<option></option>").val(this['Id']).html(this['Name']));
+                    });
+                },
+                error: function (r) {
+                    var ra = r;
+                    alert(ra);
+                }
+            });
+        });
+         
+        $('#ddlProducts').change(function () { 
+            var nId = $(this).val();
+            if (nId > 0) {
+                $.ajax({
+                    type: "GET",
+                    url: "api/Default/GetProductPrice/?nId=" + nId,
+                    data: '{}',
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: function (r) {
+                        $("#txtPrice").val(r);
+                        showTotal();
+                    }
+                });
+            }
+            else {
+                $("#txtPrice").val("");
+            }
+        });
+
+        $('#txtQty').focusout(function () {
+            showTotal();
+        });
+
+        function showTotal() {
+            $("#txtTotal").val($("#txtPrice").val() * $("#txtQty").val());
+        }
+
+        $('#btnAdd').click(function () { 
+            var list = [];
+
+            var Id = $("#ddlProducts").val();
+            var Name = $("#ddlProducts option:selected").text();
+            var Price = $("#txtPrice").val();
+            var Qty = $("#txtQty").val();
+            var Total = $("#txtTotal").val();
+
+            var tr =
+                '<tr>'
+                    + '<td class="productid" style="display:none;">' + Id + '</td>'
+                    + '<td class="name">' + Name + '</td>'
+                    + '<td class="price">' + Price + '</td>'
+                    + '<td class="qty">' + Qty + '</td>'
+                    + '<td class="total">' + Total + '</td>'
+                    + '<td>'
+                        + '<input type="button" id="btnRemove"  value="Remove" style="width:80px" class="btn btn-danger btnRemove" />'
+                    + '</td>'
+                + '</tr>';
+
+            if (Id > 0 && Price != "" && Qty != "" && Total != "")
+            {
+                $("#tbProductDets").append(tr);
+            }
+            else
+            {
+                alert('Please fill details!');
+            }
+           
+
+            $('#ddlProducts').val(0);
+            $('#txtPrice, #txtQty, #txtTotal').val('');
+          
+
+        });
+
+        $(document).on('click', '.btnRemove', function () {           
+            this.closest('tr').remove();
+        });
+
+        $('#btnSubmit').click(function () { 
+            var list = [];         
+
+            $('#tbProductDets tr').each(function (index, ele) {
+                    var orderItem = {
+                       // Id: $('.id', this).text(),
+                        ProductId: parseInt($('.productid', this).text()), // this here is tr
+                        Name: $('.name', this).text(),
+                        Price: parseInt($('.price', this).text()),
+                        Qty: parseInt($('.qty', this).text()),
+                        Total: parseInt($('.total', this).text()),
+                    }
+                    list.push(orderItem);
+            });
+            console.log(list);
+
+            var data = {
+                eOrderDets: list
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: 'api/Default/SaveRec',
+                data: JSON.stringify(data), // data : form fills and sends to the server
+                contentType: 'application/json',
+                success: function (ok) { // contents in ok is returned by the server method
+                    if (ok) {
+                        alert('Successfully saved');
+                        //here we will clear the form
+                        //list = [];
+                        //$('#orderNo,#orderDate,#description').val('');
+                        //$('#orderdetailsItems').empty();
+                    }
+                    else {
+                        alert('Error');
+                    }
+                   
+                }
+            });
+
+            
+           // $("#tbProductDets").append(tr);
+            var grandTotal = 0;
+            $.each(list, function (idx, elem) {
+                $("#tbMProductDets").append("'\<tr>  '<td>" + elem.Name + "</td>  <td>" + elem.Price + "</td>'    <td>" + elem.Qty + "</td> <td>" + elem.Total + "</td>  </tr>");
+
+                grandTotal += elem.Total;
+            });
+            $(".grandtotal").html(grandTotal);
+
+        });
+
+    </script>
+</body>
+
+</html>
